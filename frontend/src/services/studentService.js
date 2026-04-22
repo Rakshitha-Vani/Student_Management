@@ -7,7 +7,7 @@
  * IMPORTANT: All requests include JWT token for authentication
  */
 
-const API_BASE_URL = 'http://127.0.0.1:5001';
+export const API_BASE_URL = 'http://127.0.0.1:5001';
 
 /**
  * Get auth header with JWT token
@@ -40,14 +40,17 @@ const handleResponse = async (response) => {
     throw new Error(data.message || data.error || `HTTP error ${response.status}`);
   }
 
-  // For list endpoints (GET /students), backend returns:
-  // { success: true, data: [...], total, page, totalPages }
+  // Normalize student IDs and handle results
   if (Array.isArray(data.data)) {
-    return data.data;
+    return data.data.map(s => ({ ...s, id: s._id || s.id }));
   }
   
-  // For single item (GET /students/:id, POST, PUT)
-  return data.data;
+  const student = data.data;
+  if (student && (student._id || student.id)) {
+    return { ...student, id: student._id || student.id };
+  }
+  
+  return student;
 };
 
 /**
@@ -95,13 +98,17 @@ export const getStudentById = async (id) => {
  */
 export const createStudent = async (studentData) => {
   try {
+    const isFormData = studentData instanceof FormData;
+    
+    const headers = { ...getAuthHeader() };
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json';
+    }
+
     const response = await fetch(`${API_BASE_URL}/api/students`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
-      body: JSON.stringify(studentData),
+      headers,
+      body: isFormData ? studentData : JSON.stringify(studentData),
     });
 
     return await handleResponse(response);
@@ -116,13 +123,17 @@ export const createStudent = async (studentData) => {
  */
 export const updateStudent = async (id, studentData) => {
   try {
+    const isFormData = studentData instanceof FormData;
+    
+    const headers = { ...getAuthHeader() };
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json';
+    }
+
     const response = await fetch(`${API_BASE_URL}/api/students/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
-      body: JSON.stringify(studentData),
+      headers,
+      body: isFormData ? studentData : JSON.stringify(studentData),
     });
 
     return await handleResponse(response);

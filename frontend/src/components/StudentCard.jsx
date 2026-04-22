@@ -10,33 +10,55 @@
  * - Each card is independent (good for grid layouts)
  */
 
+import { API_BASE_URL } from '../services/studentService';
+
 const StudentCard = ({ student, onEdit, onDelete }) => {
   const studentId = student._id || student.id;
   
+  // Resolve image URL (Cloudinary vs Local)
+  const imageUrl = student.profileImage?.startsWith('http') 
+    ? student.profileImage 
+    : `${API_BASE_URL}${student.profileImage}`;
+  
   return (
-    <article className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 p-6 border border-gray-100">
-      {/* Student Info */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">
-            {student.name}
-          </h3>
-          <span className="text-sm text-gray-500">
-            ID: {studentId}
-          </span>
-        </div>
-        
-        <div className="space-y-2 text-sm text-gray-600">
-          <p className="flex items-center gap-2">
-            <span className="font-medium">Age:</span> 
-            {student.age} years old
-          </p>
-          <p className="flex items-center gap-2">
-            <span className="font-medium">Course:</span> 
-            {student.course}
-          </p>
-        </div>
+    <article className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col h-full">
+      {/* Student Image / Avatar */}
+      <div className="relative h-48 w-full bg-gray-200">
+        {student.profileImage ? (
+          <img 
+            src={imageUrl} 
+            alt={student.name} 
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-400 to-indigo-600">
+            <span className="text-5xl font-bold text-white opacity-40">
+              {student.name.charAt(0).toUpperCase()}
+            </span>
+          </div>
+        )}
       </div>
+
+      <div className="p-6 flex-1 flex flex-col">
+        {/* Student Info */}
+        <div className="space-y-3 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="text-xl font-bold text-gray-900 leading-tight">
+              {student.name}
+            </h3>
+          </div>
+          
+          <div className="space-y-2 text-sm text-gray-600 pt-2">
+            <p className="flex items-center gap-2">
+              <span className="p-1 px-2 bg-blue-50 text-blue-700 rounded-md text-xs font-bold uppercase">Age</span> 
+              {student.age}
+            </p>
+            <p className="flex items-center gap-2">
+              <span className="p-1 px-2 bg-purple-50 text-purple-700 rounded-md text-xs font-bold uppercase">Course</span> 
+              {student.course}
+            </p>
+          </div>
+        </div>
 
       {/* Action Buttons */}
       <div className="mt-4 flex gap-2 pt-4 border-t border-gray-100">
@@ -52,6 +74,7 @@ const StudentCard = ({ student, onEdit, onDelete }) => {
         >
           Delete
         </button>
+      </div>
       </div>
     </article>
   );

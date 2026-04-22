@@ -27,14 +27,20 @@ exports.validateStudent = (req, res, next) => {
     return next(new ApiError(400, "Name must be a non-empty string"));
   }
 
+  // Convert age to number if it's a string (common with FormData)
+  let validatedAge = typeof age === "string" ? Number(age) : age;
+
   // Validate age is a number and within range
-  if (typeof age !== "number" || isNaN(age)) {
+  if (typeof validatedAge !== "number" || isNaN(validatedAge)) {
     return next(new ApiError(400, "Age must be a valid number"));
   }
 
-  if (age < 5 || age > 100) {
+  if (validatedAge < 5 || validatedAge > 100) {
     return next(new ApiError(400, "Age must be between 5 and 100"));
   }
+
+  // Update req.body with the numeric age for the rest of the application
+  req.body.age = validatedAge;
 
   // Validate course is a string
   if (typeof course !== "string" || course.trim().length === 0) {

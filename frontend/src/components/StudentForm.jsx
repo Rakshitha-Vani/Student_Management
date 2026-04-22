@@ -13,6 +13,7 @@
 
 import { useState, useEffect } from 'react';
 import Button from './Button';
+import { API_BASE_URL } from '../services/studentService';
 
 const StudentForm = ({ student, onSubmit, onCancel, isLoading }) => {
   // useState - manages form state
@@ -22,6 +23,10 @@ const StudentForm = ({ student, onSubmit, onCancel, isLoading }) => {
     age: '',
     course: ''
   });
+
+  // Image upload state
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
   // Validation errors state
   const [errors, setErrors] = useState({});
@@ -35,6 +40,13 @@ const StudentForm = ({ student, onSubmit, onCancel, isLoading }) => {
         age: student.age?.toString() || '',
         course: student.course || ''
       });
+      // Handle existing image preview
+      if (student.profileImage) {
+        const url = student.profileImage.startsWith('http') 
+          ? student.profileImage 
+          : `${API_BASE_URL}${student.profileImage}`;
+        setImagePreview(url);
+      }
     }
   }, [student]);
 
@@ -49,6 +61,20 @@ const StudentForm = ({ student, onSubmit, onCancel, isLoading }) => {
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  // Handle image change
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -82,10 +108,17 @@ const StudentForm = ({ student, onSubmit, onCancel, isLoading }) => {
     e.preventDefault(); // Prevent default form submission
     
     if (validate()) {
-      onSubmit({
-        ...formData,
-        age: parseInt(formData.age)
-      });
+      // Use FormData for file upload support
+      const submitData = new FormData();
+      submitData.append('name', formData.name);
+      submitData.append('age', formData.age);
+      submitData.append('course', formData.course);
+      
+      if (imageFile) {
+        submitData.append('profileImage', imageFile);
+      }
+
+      onSubmit(submitData);
     }
   };
 
@@ -182,6 +215,35 @@ const StudentForm = ({ student, onSubmit, onCancel, isLoading }) => {
         {errors.course && (
           <p className="mt-1 text-sm text-red-600">{errors.course}</p>
         )}
+      </div>
+
+      {/* Profile Image Field */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Profile Photo
+        </label>
+        <div className="flex items-center gap-4">
+          {imagePreview && (
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-blue-100 shadow-sm shrink-0">
+              <img 
+                src={imagePreview} 
+                alt="Preview" 
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+          <div className="flex-1">
+            <input
+              type="file"
+              id="profileImage"
+              name="profileImage"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              disabled={isLoading}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Form Actions */}

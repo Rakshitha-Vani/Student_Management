@@ -1,4 +1,5 @@
 const studentService = require("../services/student.service");
+const socketUtil = require("../utils/socket");
 
 /**
  * Controller Layer — ONLY handles HTTP request/response.
@@ -15,15 +16,42 @@ const studentService = require("../services/student.service");
 
 // ─── CREATE ───────────────────────────────────────────────
 exports.create = async (req, res, next) => {
-  try {
-    const student = await studentService.createStudent(req.body);
-    res.status(201).json({
-      success: true,
-      message: "Student created successfully",
-      data: student
-    });
-  } catch (err) {
-    next(err);
+  const MAX_RETRIES = 3;
+  let attempts = 0;
+
+  while (attempts < MAX_RETRIES) {
+    try {
+      const data = { ...req.body };
+      
+      // If an image was uploaded, store the Cloudinary URL or local path
+      if (req.file) {
+        data.profileImage = req.file.path;
+        
+        // If it's local storage, we need to normalize the path for the web
+        if (!require("../config/cloudinary").isCloudinaryConfigured) {
+          // data.profileImage will be something like "uploads/image.jpg"
+          // We want it as "/uploads/image.jpg" so the browser can find it
+          data.profileImage = `/${req.file.path.replace(/\\/g, '/')}`;
+        }
+      }
+
+      const student = await studentService.createStudent(data);
+      
+      // Notify all clients in real-time
+      socketUtil.emit("student:created", student);
+
+      return res.status(201).json({
+        success: true,
+        message: "Student created successfully",
+        data: student
+      });
+    } catch (err) {
+      attempts++;
+      console.warn(`⚠️ Create student failed (attempt ${attempts}/${MAX_RETRIES}):`, err.message);
+      if (attempts === MAX_RETRIES) return next(err);
+      // Wait 500ms before retrying
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
   }
 };
 
@@ -61,7 +89,25 @@ exports.getOne = async (req, res, next) => {
 // ─── UPDATE ───────────────────────────────────────────────
 exports.update = async (req, res, next) => {
   try {
-    const student = await studentService.updateStudent(req.params.id, req.body);
+    const data = { ...req.body };
+    
+      // If an image was uploaded, store the Cloudinary URL or local path
+      if (req.file) {
+        data.profileImage = req.file.path;
+        
+        // If it's local storage, we need to normalize the path for the web
+        if (!require("../config/cloudinary").isCloudinaryConfigured) {
+          // data.profileImage will be something like "uploads/image.jpg"
+          // We want it as "/uploads/image.jpg" so the browser can find it
+          data.profileImage = `/${req.file.path.replace(/\\/g, '/')}`;
+        }
+      }
+
+    const student = await studentService.updateStudent(req.params.id, data);
+    
+    // Notify all clients in real-time
+    socketUtil.emit("student:updated", student);
+
     res.status(200).json({
       success: true,
       message: "Student updated successfully",
@@ -76,6 +122,10 @@ exports.update = async (req, res, next) => {
 exports.remove = async (req, res, next) => {
   try {
     const student = await studentService.deleteStudent(req.params.id);
+    
+    // Notify all clients in real-time
+    socketUtil.emit("student:deleted", student._id);
+
     res.status(200).json({
       success: true,
       message: "Student deleted successfully",

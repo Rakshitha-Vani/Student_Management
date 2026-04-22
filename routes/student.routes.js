@@ -5,6 +5,7 @@ const controller = require("../controllers/student.controller");
 const { validateStudent } = require("../middlewares/validation.middleware");
 const { validateObjectId } = require("../middlewares/validateObjectId.middleware");
 const { protect } = require("../middlewares/auth.middleware");
+const { upload } = require("../config/cloudinary");
 
 /**
  * Student Routes
@@ -23,8 +24,8 @@ const { protect } = require("../middlewares/auth.middleware");
 // All routes are protected - require valid JWT token
 router.use(protect);
 
-// POST   /api/students       → Create a new student
-router.post("/", validateStudent, controller.create);
+// POST   /api/students       → Create a new student (with optional image)
+router.post("/", upload.single("profileImage"), validateStudent, controller.create);
 
 // GET    /api/students       → Get all students (supports ?page=1&limit=10&search=john)
 router.get("/", controller.getAll);
@@ -33,7 +34,7 @@ router.get("/", controller.getAll);
 router.get("/:id", validateObjectId, controller.getOne);
 
 // PUT    /api/students/:id   → Update a student by ID
-router.put("/:id", validateObjectId, validateStudent, controller.update);
+router.put("/:id", validateObjectId, upload.single("profileImage"), validateStudent, controller.update);
 
 // DELETE /api/students/:id   → Delete a student by ID
 router.delete("/:id", validateObjectId, controller.remove);

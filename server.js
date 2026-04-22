@@ -15,19 +15,33 @@
  * 3. Start Express server
  * 4. If DB connection fails → process exits (handled in config/db.js)
  */
+const http = require("http");
 const { PORT } = require("./config");
 const connectDB = require("./config/db");
 const app = require("./app");
+const socketUtil = require("./utils/socket");
 
 const startServer = async () => {
-  // Step 1: Connect to MongoDB (exits process if connection fails)
-  await connectDB();
+  try {
+    // Step 1: Connect to MongoDB
+    await connectDB();
 
-  // Step 2: Start the HTTP server only after DB is connected
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📡 API Base URL: http://localhost:${PORT}/api/students`);
-  });
+    // Step 2: Create HTTP server from Express app
+    const server = http.createServer(app);
+
+    // Step 3: Initialize WebSockets
+    socketUtil.init(server);
+
+    // Step 4: Start the server
+    server.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`📡 API Base URL: http://localhost:${PORT}/api/students`);
+      console.log(`🔌 WebSockets initialized`);
+    });
+  } catch (error) {
+    console.error("❌ Failed to start server:", error);
+    process.exit(1);
+  }
 };
 
 startServer();

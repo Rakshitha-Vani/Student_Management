@@ -11,6 +11,8 @@
  * - Good for accessibility with proper headers
  */
 
+import { API_BASE_URL } from '../services/studentService';
+
 const StudentTable = ({ students, onEdit, onDelete }) => {
   return (
     <div className="overflow-x-auto">
@@ -21,7 +23,7 @@ const StudentTable = ({ students, onEdit, onDelete }) => {
               scope="col" 
               className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
             >
-              ID
+              Photo
             </th>
             <th 
               scope="col" 
@@ -59,6 +61,19 @@ const StudentTable = ({ students, onEdit, onDelete }) => {
             >
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {studentId}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                {student.profileImage ? (
+                  <img 
+                    src={student.profileImage?.startsWith('http') ? student.profileImage : `${API_BASE_URL}${student.profileImage}`} 
+                    alt={student.name} 
+                    className="h-10 w-10 rounded-full object-cover border border-gray-100 shadow-sm"
+                  />
+                ) : (
+                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
+                    {student.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                 {student.name}

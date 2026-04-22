@@ -11,14 +11,40 @@
  * - Virtual DOM: React efficiently updates only changed elements
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import * as studentService from '../services/studentService';
+import useSocket from './useSocket';
+
+// Map production and local backend URLs
+const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5001';
 
 export const useStudents = () => {
   // useState - manages state in functional components
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Define socket event handlers
+  const socketEvents = useMemo(() => ({
+    'student:created': (newStudent) => {
+      setStudents(prev => {
+        // Prevent duplicates if the current user also emitted
+        const exists = prev.some(s => (s._id || s.id) === (newStudent._id || newStudent.id));
+        return exists ? prev : [...prev, newStudent];
+      });
+    },
+    'student:updated': (updatedStudent) => {
+      setStudents(prev => 
+        prev.map(s => ((s._id || s.id) === (updatedStudent._id || updatedStudent.id) ? updatedStudent : s))
+      );
+    },
+    'student:deleted': (deletedId) => {
+      setStudents(prev => prev.filter(s => (s._id || s.id) !== deletedId));
+    }
+  }), []);
+
+  // Initialize Socket connection
+  useSocket(SOCKET_URL, socketEvents);
 
   /**
    * useEffect - Side effect handling

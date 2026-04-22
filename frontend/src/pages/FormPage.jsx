@@ -62,7 +62,8 @@ const FormPage = () => {
         // Navigate back to dashboard on success
         navigate('/dashboard');
       } else {
-        // Handle error (in a real app, you'd show an error message)
+        // Show error message to user
+        alert(`Failed: ${result.error || 'Unknown error occurred'}`);
         console.error('Error:', result.error);
       }
     } catch (error) {

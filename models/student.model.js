@@ -36,6 +36,10 @@ const studentSchema = new mongoose.Schema(
       trim: true,
       minlength: [2, "Course must be at least 2 characters"],
       maxlength: [100, "Course name cannot exceed 100 characters"]
+    },
+    profileImage: {
+      type: String,
+      default: "https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg" // Default placeholder
     }
   },
   {
